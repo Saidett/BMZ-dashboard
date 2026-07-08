@@ -5,9 +5,12 @@ requires-python = ">=3.11"
 
 dependencies = [
     "requests",
+    "beautifulsoup4",
+    "PyPDF2",
     "pdfplumber",
     "ollama",
     "pandas",
+    "os"
 ]
 
 [tool.setuptools.packages.find]

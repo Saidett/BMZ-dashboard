@@ -1,5 +1,2 @@
-R
 data
-docs
-notebooks
 python

@@ -8,6 +8,6 @@ climate_commitments_dashboard.egg-info/top_level.txt
 python/__init__.py
 python/config.py
 python/extract/__init__.py
+python/extract/classify.py
 python/extract/download.py
-python/extract/llm_extract.py
 python/extract/parse.py

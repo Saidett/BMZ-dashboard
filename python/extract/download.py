@@ -1,7 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
-import io
-from PyPDF2 import PdfFileReader, PdfReader
+from PyPDF2 import PdfReader
+import os
 from python.config import DATA_RAW, BMZ_URL
 
 # publications base url
@@ -32,18 +32,17 @@ for offset in range(0, nr_publications, 9):
     hrefs = [link.get("href") for link in links]
     publications_list.extend(hrefs)
 
-# remove kinderbuch and stickerbuch
-filter_terms = ["kinderbuch", "stickerbuch", "kinderplakat"]
+# remove kinderbuch and stickerbuch and kurzfassung
+filter_terms = ["kinderbuch", "stickerbuch", "kinderplakat", "kurzfassung"]
 filtered_list = [url for url in publications_list 
             if not any(term in url.lower() for term in filter_terms)]
 
 print(len(filtered_list))
 
 for pdf_file in filtered_list:
-    file_path = f"{DATA_RAW}{pdf_file.split('/')[-1]}"
+    file_path = os.path.join(DATA_RAW, pdf_file.split('/')[-1])
     response = requests.get(pdf_file)
     
     file = open(file_path, "wb")
     file.write(response.content)
     file.close()
-
