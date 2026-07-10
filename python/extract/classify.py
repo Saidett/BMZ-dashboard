@@ -10,10 +10,8 @@ CLASSIFY_PROMPT = """You are analyzing a subsection of a German development mini
 Extract structured data in JSON format and in English:
 
 {{
-  "countries": ["list of specific countries mentioned, be specific. Exclude Germany. Do not name regions. If no country is mentioned, leave empty"],
-  "regions": ["list of regions like Africa, Asia, Latin America, Global. If no region is mentioned, leave empty"],
-  "sdg": [list of SDG numbers (1-17) directly adressed],
-  "summary": "One sentence summary",
+  "regions": ["list of regions (Africa, Asia, Latin America, Global). If no region is mentioned, leave empty"],
+  "sdgs": [list of SDG numbers (1-17) directly adressed. Put ONLY the number.]
 }}
 
 First 3000 characters of publication:
@@ -37,6 +35,6 @@ for chunk in loaded_chunks:
     info = json.loads(response["message"]["content"])
     info["pdf_name"] = chunk.get("pdf")
     classified_chunks.append(info)
-    print(f"{chunk.get("pdf")}: {info['countries']}")
+    print(f"{chunk.get("pdf")}: {info["countries"]}, {info["regions"]}, {info["sdgs"]}")
 
-pd.DataFrame(results).to_csv("data/processed/publikationen_klassifiziert.csv", index=False)
+#pd.DataFrame(classified_chunks).to_csv("data/processed/publikationen_klassifiziert.csv", index=False)
