@@ -35,6 +35,6 @@ for chunk in loaded_chunks:
     info = json.loads(response["message"]["content"])
     info["pdf_name"] = chunk.get("pdf")
     classified_chunks.append(info)
-    print(f"{chunk.get("pdf")}: {info["countries"]}, {info["regions"]}, {info["sdgs"]}")
+    print(f"{chunk.get("pdf")}: {info["regions"]}, {info["sdgs"]}")
 
 #pd.DataFrame(classified_chunks).to_csv("data/processed/publikationen_klassifiziert.csv", index=False)
