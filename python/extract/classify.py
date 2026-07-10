@@ -3,38 +3,40 @@ import ollama
 from pathlib import Path
 import pdfplumber
 import pandas as pd
+import json
 
-CLASSIFY_PROMPT = """You are analyzing a German BMZ publication.
+# define prompt to classify
+CLASSIFY_PROMPT = """You are analyzing a subsection of a German development ministry publication.
 Extract structured data in JSON format and in English:
 
 {{
-  "countries": ["list of countries MENTIONED, be specific. Exclude Germany"],
-  "regions": ["list of regions like Africa, Asia, Latin America, Global, None"],
-  "summary": "One sentence summary in German",
-  "specific_mentions": ["Kenia", "Klimafonds", ... specific entities mentioned]
+  "countries": ["list of specific countries mentioned, be specific. Exclude Germany. Do not name regions. If no country is mentioned, leave empty"],
+  "regions": ["list of regions like Africa, Asia, Latin America, Global. If no region is mentioned, leave empty"],
+  "sdg": [list of SDG numbers (1-17) directly adressed],
+  "summary": "One sentence summary",
 }}
 
 First 3000 characters of publication:
 {text}
 """
 
-pdf_dir = Path("data/raw/")
-results = []
+# load json with chunks
+with open("data/processed/chunks.json", "r", encoding="utf-8") as f:
+    loaded_chunks = json.load(f)
 
-for pdf_path in sorted(pdf_dir.glob("*.pdf")):
-    with pdfplumber.open(pdf_path) as pdf:
-        text = "\n".join(page.extract_text() or "" for page in pdf.pages[:5])
-    
+classified_chunks = []
+
+for chunk in loaded_chunks:
+
     response = ollama.chat(
         model="llama3.2:3b",
-        messages=[{"role": "user", "content": CLASSIFY_PROMPT.format(text=text[:3000])}],
+        messages=[{"role": "user", "content": CLASSIFY_PROMPT.format(text=chunk.get("text"))}],
         format="json",
     )
     
     info = json.loads(response["message"]["content"])
-    info["pdf_name"] = pdf_path.name
-    info["pdf_path"] = str(pdf_path)
-    results.append(info)
-    print(f"{pdf_path.name}: {info['countries']}")
+    info["pdf_name"] = chunk.get("pdf")
+    classified_chunks.append(info)
+    print(f"{chunk.get("pdf")}: {info['countries']}")
 
 pd.DataFrame(results).to_csv("data/processed/publikationen_klassifiziert.csv", index=False)

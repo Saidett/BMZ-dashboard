@@ -5,6 +5,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 import fitz
 import re
 import html
+import json
 
 pdf_dir = DATA_RAW
 all_chunks = []
@@ -55,9 +56,14 @@ for pdf_path in sorted(pdf_dir.glob("*.pdf")):
     # now do the recursive chunking with langchain
     chunks = splitter.split_text(text)
     
-    for chunk in chunks:
+    for i, chunk in enumerate(chunks):
         all_chunks.append({
             "pdf": pdf_path.name,
-            "chunk": final_clean(chunk),
+            "chunk_index": i,
+            "text": final_clean(chunk),
             "char_count": len(chunk),
         })
+
+# now save chunks: document name, chunk index, chunk content, character count
+with open("data/processed/chunks.json", "w", encoding="utf-8") as f:
+     json.dump(all_chunks, f, ensure_ascii=False, indent=2)
