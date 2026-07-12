@@ -37,7 +37,7 @@ R Shiny Dashboard (R/) → Reads pre-processed JSON → Interactive filtering by
 - **Models** (via Ollama): llama3.2:3b (classification), nomic-embed-text (embeddings)
 
 ## Project Structure
-
+```
 ├── python/
 │   ├── config.py              # Paths and constants
 │   └── extract/
@@ -51,7 +51,7 @@ R Shiny Dashboard (R/) → Reads pre-processed JSON → Interactive filtering by
 │   ├── raw/                   # Scraped PDFs
 │   └── processed/             # JSON outputs
 └── pyproject.toml
-
+```
 ## Getting Started
 
 ```bash
