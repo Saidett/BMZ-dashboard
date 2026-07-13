@@ -33,7 +33,7 @@ for offset in range(0, nr_publications, 9):
     publications_list.extend(hrefs)
 
 # remove kinderbuch and stickerbuch and kurzfassung
-filter_terms = ["kinderbuch", "stickerbuch", "kinderplakat", "kurzfassung"]
+filter_terms = ["kinderbuch", "stickerbuch", "kinderplakat", "kurzfassung", "umwelterklaerung"]
 filtered_list = [url for url in publications_list 
             if not any(term in url.lower() for term in filter_terms)]
 
