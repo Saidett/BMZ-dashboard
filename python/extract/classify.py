@@ -3,18 +3,17 @@ import ollama
 from pathlib import Path
 import pdfplumber
 import pandas as pd
-import json
 
 # define prompt to classify
 CLASSIFY_PROMPT = """You are analyzing a subsection of a German development ministry publication.
 Extract structured data in JSON format and in English:
 
 {{
-  "regions": ["list of regions (Africa, Asia, Latin America, Global). If no region is mentioned, leave empty"],
-  "sdgs": [list of SDG numbers (1-17) directly adressed. Put ONLY the number.]
+  "regions": ["list of regions directly adressed (Africa, Asia, Latin America, Europe, Global). If no region is mentioned, leave empty."],
+  "sdgs": [list of SDG numbers (1-17) directly adressed. Put ONLY the number. If none, leave empty.]
 }}
 
-First 3000 characters of publication:
+The subsection:
 {text}
 """
 

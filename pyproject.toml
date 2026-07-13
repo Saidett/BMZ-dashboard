@@ -13,7 +13,8 @@ dependencies = [
     "os",
     "langchain",
     "langchain-text-splitters",
-    "PyMuPDF"
+    "PyMuPDF",
+    "json"
 ]
 
 [tool.setuptools.packages.find]
