@@ -73,6 +73,9 @@ for chunk in chunk_sample:
             format="json",
         )
         info = json.loads(response["message"]["content"])
+        info.setdefault("regions", [])
+        info.setdefault("sdgs", [])
+        info.setdefault("countries", [])
         entry[f"{model_name}_regions"] = info["regions"]
         entry[f"{model_name}_sdgs"] = info["sdgs"]
         entry[f"{model_name}_countries"] = info["countries"]

@@ -12,8 +12,8 @@ all_chunks = []
 
 # using langchain recursive splitting to respect PDF structure
 splitter = RecursiveCharacterTextSplitter(
-    chunk_size=500,   
-    chunk_overlap=50
+    chunk_size=1500,   
+    chunk_overlap=200
 )
 
 # pre-cleaning helper function
