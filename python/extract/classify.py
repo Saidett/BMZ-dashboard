@@ -25,7 +25,7 @@ SDGs:
 15=Life on Land, 16=Peace, Justice and Strong Institutions, 17=Partnerships for the goals
 
 Rules:
-- Use only the allowed region names.
+- Use only the allowed region names in Engish.
 - Use standard English country names (e.g., Kenya, India, Germany).
 - Do not include regions or continents as countries.
 - Return SDGs as numbers only.

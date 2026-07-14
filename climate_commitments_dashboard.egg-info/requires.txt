@@ -1,4 +1,10 @@
 requests
+beautifulsoup4
+PyPDF2
 pdfplumber
 ollama
 pandas
+langchain
+langchain-text-splitters
+PyMuPDF
+nltk

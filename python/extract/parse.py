@@ -21,19 +21,19 @@ splitter = RecursiveCharacterTextSplitter(
 # pre-cleaning helper function
 def clean_text(text):
     text = html.unescape(text)  # remove html chars            
-    text = re.sub(r'[ \t]+', ' ', text)     # remove double spaces
-    text = re.sub(r'\n{3,}', '\n\n', text)  # remove excessive line breaks
-    text = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f]', '', text)  # remove special chars
-    text = text.replace('\xad', '')           # remove soft hyphens
-    text = re.sub(r'-\n', '', text)           # join hyphenated line breaks
-    text = re.sub(r'(?<=\w)\n(?=\w)', '', text)  # merge line break if next to them its not whitespace (to merge hyphenated words)
-    text = re.sub(r'(?<!\n)\n(?!\n)', ' ', text)  # single \n → space, keep \n\n
+    text = re.sub(r"[ \t]+", " ", text)     # remove double spaces
+    text = re.sub(r"\n{3,}", "\n\n", text)  # remove excessive line breaks
+    text = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", "", text)  # remove special chars
+    text = text.replace("\xad", "")           # remove soft hyphens
+    text = re.sub(r"-\n", "", text)           # join hyphenated line breaks
+    text = re.sub(r"(?<=\w)\n(?=\w)", "", text)  # merge line break if next to them its not whitespace (to merge hyphenated words)
+    text = re.sub(r"(?<!\n)\n(?!\n)", " ", text)  # single \n → space, keep \n\n
     return text.strip(" \t")
 
 # post cleaning helper function
 def final_clean(chunk):
-    chunk = chunk.strip().replace('\n', ' ')
-    chunk = re.sub(r' +', ' ', chunk)
+    chunk = chunk.strip().replace("\n", " ")
+    chunk = re.sub(r" +", " ", chunk)
     return chunk
 
 # loop through PDFs to turn into chunks and save them in all_chunks list
@@ -90,7 +90,7 @@ def is_meaningful(text):
         return False
 
     # reject flat lists: many parenthetical acronyms but no sentence structure
-    paren_acronyms = len(re.findall(r'\([A-Za-z]{2,5}\)', text))
+    paren_acronyms = len(re.findall(r"\([A-Za-z]{2,5}\)", text))
     sentences = text.count(".")
     if paren_acronyms >= 5 and sentences < 3:
         return False
@@ -100,9 +100,15 @@ def is_meaningful(text):
 good_chunks = []
 
 for chunk in all_chunks:
-    if not is_meaningful(chunk["text"]):
+    if is_meaningful(chunk["text"]):
         good_chunks.append(chunk)
 
+len(good_chunks)
+
+# filter out chunks that are too small to be meaningful (less than 500 characters, intuitive judgement after inspection)
+good_chunks = [c for c in good_chunks if c["char_count"] >= 499]
+
+# final length: 5205 chunks
 len(good_chunks)
 
 # now save chunks: document name, chunk index, chunk content, character count

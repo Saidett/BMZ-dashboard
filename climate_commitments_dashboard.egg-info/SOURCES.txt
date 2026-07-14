@@ -10,4 +10,7 @@ python/config.py
 python/extract/__init__.py
 python/extract/classify.py
 python/extract/download.py
+python/extract/llm_extract.py
+python/extract/model_comparison.py
 python/extract/parse.py
+python/extract/tfidf.py

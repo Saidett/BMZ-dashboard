@@ -8,3 +8,7 @@ Requires-Dist: PyPDF2
 Requires-Dist: pdfplumber
 Requires-Dist: ollama
 Requires-Dist: pandas
+Requires-Dist: langchain
+Requires-Dist: langchain-text-splitters
+Requires-Dist: PyMuPDF
+Requires-Dist: nltk

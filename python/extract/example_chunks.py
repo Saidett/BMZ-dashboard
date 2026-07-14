@@ -10,13 +10,25 @@ vec = TfidfVectorizer(max_features=500)
 X = vec.fit_transform([c["text"] for c in loaded_chunks])
 
 # select k for number of clusters (examples)
-k = 5
+k = 17
 km = KMeans(n_clusters=k, random_state=0).fit(X)
 
 centroids = km.cluster_centers_
 examples = []
+
 for label in range(k):
-    cluster_indices = [i for i, l in enumerate(km.labels_) if l == label]
-    # find the chunk closest to this cluster's centroid
+    cluster_indices = [
+        i for i, l in enumerate(km.labels_)
+        if l == label and 500 <= loaded_chunks[i]["char_count"] <= 750
+    ]
+    if not cluster_indices:
+        continue 
+
     best = min(cluster_indices, key=lambda i: (X[i] - centroids[label]).sum())
     examples.append(loaded_chunks[best])
+
+examples
+
+# save chunks for manual classification
+df = pd.DataFrame(examples)
+df.to_csv("data/processed/example_chunks.csv", index=False, encoding="utf-8-sig")

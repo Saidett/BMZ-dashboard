@@ -10,11 +10,11 @@ dependencies = [
     "pdfplumber",
     "ollama",
     "pandas",
-    "os",
     "langchain",
     "langchain-text-splitters",
     "PyMuPDF",
-    "json"
+    "nltk",
+    "scikit-learn"
 ]
 
 [tool.setuptools.packages.find]
