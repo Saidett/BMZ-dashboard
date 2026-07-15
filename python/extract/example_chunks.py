@@ -1,5 +1,7 @@
 from sklearn.cluster import KMeans
 from sklearn.feature_extraction.text import TfidfVectorizer
+import json
+import pandas as pd
 
 # load json with chunks
 with open("data/processed/chunks.json", "r", encoding="utf-8") as f:
