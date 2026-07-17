@@ -12,7 +12,7 @@ EMBEDDING_MODEL = "nomic-embed-text"
 SDG_embedding = []
 
 # define embedding function that appends the dict
-def add_chunk_to_database(chunk):
+def embed_SDG(chunk):
   embedding = ollama.embed(model=EMBEDDING_MODEL, input=chunk["description"])['embeddings'][0]
   
   SDG_embedding.append({
@@ -22,9 +22,9 @@ def add_chunk_to_database(chunk):
   })
 
 # run embedding
-for i, chunk in enumerate(SDGs):
-  add_chunk_to_database(chunk)
-  print(f"Added chunk {i+1}/{len(SDGs)} to the database")
+for i, target in enumerate(SDGs):
+  embed_SDG(target)
+  print(f"Added target {i+1}/{len(SDGs)}")
 
 # save
 with open("data/processed/SDGs_embedded.pkl", 'wb') as f:

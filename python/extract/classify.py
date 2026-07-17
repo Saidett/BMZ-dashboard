@@ -34,22 +34,11 @@ Output: {{"sdgs": [], "regions": [], "countries": []}}
 Text: "{text}"
 Output:"""
 
-# define similarity function for target RAG
-def cosine_similarity(a, b):
-  dot_product = sum([x * y for x, y in zip(a, b)])
-  norm_a = sum([x ** 2 for x in a]) ** 0.5
-  norm_b = sum([x ** 2 for x in b]) ** 0.5
-  return dot_product / (norm_a * norm_b)
-
 # Pre-generate text summaries for each SDG and the BMZ strategy from the chunks?
 
 # load json with chunks
 with open("data/processed/chunks.json", "r", encoding="utf-8") as f:
     loaded_chunks = json.load(f)
-
-# load SDG embeddings
-with open("data/processed/SDGs_embedded.pkl", "rb") as f:
-    SDG_embedding = pickle.load(f)
 
 classified_chunks = []
 
