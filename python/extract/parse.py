@@ -27,7 +27,7 @@ def clean_text(text):
     text = text.replace("\xad", "")           # remove soft hyphens
     text = re.sub(r"-\n", "", text)           # join hyphenated line breaks
     text = re.sub(r"(?<=\w)\n(?=\w)", "", text)  # merge line break if next to them its not whitespace (to merge hyphenated words)
-    text = re.sub(r"(?<!\n)\n(?!\n)", " ", text)  # single \n → space, keep \n\n
+    text = re.sub(r"(?<!\n)\n(?!\n)", " ", text)  # single \n to space, keep \n\n
     return text.strip(" \t")
 
 # post cleaning helper function
@@ -61,24 +61,25 @@ for pdf_path in sorted(pdf_dir.glob("*.pdf")):
     for i, chunk in enumerate(chunks):
         all_chunks.append({
             "pdf": pdf_path.name,
-            "chunk_index": i,
             "text": final_clean(chunk),
             "char_count": len(chunk),
         })
 
 len(all_chunks)
 
-# remove meaningless chunks by checking stop word ration
+# remove meaningless chunks by checking stop word ratio and other
 # nltk.download("stopwords")
 all_stops = set(stopwords.words("german") + stopwords.words("english"))
 
 # define function to determine if text is meaningful based on stop word ratio / too few words
 def is_meaningful(text):
     words = text.split()
+
+    # remove chunks less than 20 words
     if len(words) < 20:
         return False
 
-    # reject spaced-out letters
+    # reject spaced-out letters if more than 50% of words
     single_chars = sum(1 for w in words if len(w) == 1)
     if single_chars / len(words) > 0.50:
         return False
@@ -110,6 +111,9 @@ good_chunks = [c for c in good_chunks if c["char_count"] >= 499]
 
 # final length: 5205 chunks
 len(good_chunks)
+
+# add chunk index now after !! filtering
+#good_chunks[chunk_index] = good_chunks[i]
 
 # now save chunks: document name, chunk index, chunk content, character count
 with open("data/processed/chunks.json", "w", encoding="utf-8") as f:

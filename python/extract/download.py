@@ -2,10 +2,10 @@ import requests
 from bs4 import BeautifulSoup
 from PyPDF2 import PdfReader
 import os
-from python.config import DATA_RAW, BMZ_URL
+from python.config import DATA_RAW
 
 # publications base url
-base_url = BMZ_URL
+base_url = "https://www.bmz.de/ajax/filterlist/de/24710-24710"
 
 # get the url from requests get method
 read = requests.get(base_url)
@@ -33,9 +33,9 @@ for offset in range(0, nr_publications, 9):
     publications_list.extend(hrefs)
 
 # remove kinderbuch and stickerbuch and kurzfassung
-filter_terms = ["kinderbuch", "stickerbuch", "kinderplakat", "kurzfassung", "umwelterklaerung"]
+terms_list = ["kinderbuch", "stickerbuch", "kinderplakat", "kurzfassung", "umwelterklaerung"]
 filtered_list = [url for url in publications_list 
-            if not any(term in url.lower() for term in filter_terms)]
+            if not any(term in url.lower() for term in terms_list)]
 
 print(len(filtered_list))
 

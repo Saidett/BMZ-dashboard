@@ -20,44 +20,23 @@ for i, chunk in enumerate(loaded_chunks):
   loaded_chunks[i]["embedding"] = embedding
   print(f"Embedded chunk {i+1}/{len(loaded_chunks)}")
 
-# find most similar SDG target with cosine similarity funct
-def cosine_similarity(a, b):
-  dot_product = sum([x * y for x, y in zip(a, b)])
-  norm_a = sum([x ** 2 for x in a]) ** 0.5
-  norm_b = sum([x ** 2 for x in b]) ** 0.5
-  return dot_product / (norm_a * norm_b)
-
+# this turns the list of embeddings into a matrix (5205, 768 and 169, 768)
 chunk_embedding_array = np.array([c["embedding"] for c in loaded_chunks])
 SDG_embedding_array = np.array([c["embedding"] for c in SDG_embedding])
-similarities = chunk_embedding_array @ SDG_embedding_array.T
 
-for chunk in loaded_chunks:
-    
-    target_similarity = []
-    
-    for i, target in SDG_embedding:
-        similiarity = cosine_similarity(chunk["embedding"], target["embedding"])
-        target_similarity.append(similiarity)
-        target_similarity[i]["target"] = 
+# to normalise the embeddings, computes the distance of the 768 dimensional vector from zero to normalise them (0-1)
+chunk_norms = np.linalg.norm(chunk_embedding_array, axis = 1, keepdims=True)
+SDG_norms = np.linalg.norm(SDG_embedding_array, axis = 1, keepdims=True)
 
-cosine_similarity(loaded_chunks[1]["embedding"], SDG_embedding[2]["embedding"])
+# dividing the array by the distance from before to normalise
+chunk_normed = chunk_embedding_array / chunk_norms
+SDG_normed = SDG_embedding_array / SDG_norms
 
-# save
-with open("data/processed/SDGs_embedded.pkl", 'wb') as f:
-    pickle.dump(SDG_embedding, f)
+similarities = chunk_normed @ SDG_normed.T  # → (5205, 169)
 
-def cosine_similarity_matrix(chunk_embs, target_embs):
-    chunk_embs = np.array(chunk_embs)
-    target_embs = np.array(target_embs)
-    
-    # normalize
-    chunk_norms = np.linalg.norm(chunk_embs, axis=1, keepdims=True)
-    target_norms = np.linalg.norm(target_embs, axis=1, keepdims=True)
-    
-    chunk_embs_normed = chunk_embs / chunk_norms
-    target_embs_normed = target_embs / target_norms
-    
-    return chunk_embs_normed @ target_embs_normed.T
+# now select the top 10 per chunk
+top10 = np.argsort(similarities, axis = 1)[:, -10:]
 
-# (5000, 40) similarity matrix, all at once
-sim_matrix = cosine_similarity_matrix(chunk_embedding_array, SDG_embedding_array)
+# save array with top 10 targets per chunk
+with open("data/processed/top_targets_per_chunk.pkl", 'wb') as f:
+    pickle.dump(top10, f)

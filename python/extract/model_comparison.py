@@ -6,37 +6,31 @@ import pdfplumber
 import pandas as pd
 
 CLASSIFY_PROMPT = """You are analyzing a subsection of a German development ministry publication.
+Classify the text into SDG targets, regions, and countries.
 
-Extract:
-- regions
-- countries
-- SDGs
-- reasoning
-
-Allowed regions: Africa, Asia, Latin America, Europe, Global
-
-SDGs:
-1=No Poverty, 2=Zero Hunger, 3=Good Health and Well-being, 4=Quality Education, 5=Gender Equality
-6=Clean Water and Sanitation, 7=Affordable and Clean Energy, 8=Decent Work and Economic Growth, 9=Industry, Innovation and Infrastructure, 10=Reduced Inequalities
-11=Sustainable Cities and Communities, 12=Responsible Consumption and Production, 13=Climate Action, 14=Life Below Water
-15=Life on Land, 16=Peace, Justice and Strong Institutions, 17=Partnerships for the goals
+Use ONLY the following candidate SDG targets. Do not assign targets outside this list: {targets}
 
 Rules:
-- Use only the allowed region names in English.
+- Allowed regions: Africa, Asia, Latin America, Europe
 - Use standard English country names (e.g., Kenya, India, Germany).
 - Do not include regions or continents as countries.
-- Return SDGs as numbers only.
+- Return SDG targets as numbers only.
 - Include an SDG if the text clearly relates to it, even if the SDG number or name is not mentioned.
-- Use [] if no region, SDG or country apply.
-- "reasoning": a short 1-2 sentence explanation of your choices (keep it brief).
+- Use [] if no SDG target, region or country apply.
 
 Examples:
-{{"sdgs": [13], "regions": ["Africa"], "countries": ["Kenya"], "reasoning": "Mentions renewable energy projects in Kenya, relating to SDG 13 (Climate Action)."}}
-{{"sdgs": [1, 2, 10], "regions": ["Asia", "Africa"], "countries": [], "reasoning": "Discusses poverty reduction and hunger programs across Asia and Africa, relating to SDGs 1, 2, and 10."}}
-{{"sdgs": [], "regions": ["Global"], "countries": [], "reasoning": "General statement about international cooperation with no specific region or SDG."}}
 
-Text:
-{text}"""
+Text: "Länderkapitel  |  75 Menschenrechtsaktivistinnen und -aktivisten, die in Landkonflikten Position beziehen oder die Verletzung von Indigenenrechten anprangern, Aus Kreisen evangelikaler Fundamentalisten werden immer wieder Übergriffe auf religiöse und sexuelle Minderheiten bekannt. LGBTIQ+ Personen werden auch aus religiöser Motivation beleidigt und angegriffen. Der zunehmende Einfluss evangelikaler Fundamentalisten erschwert es Anhängerinnen und Anhängern afrobrasilianischer Religionen, ihren Glauben öffentlich auszuüben."
+Output: {{"sdgs": [10.2, 10.3, 16.1, 16.10], "regions": ["Latin America"], "countries": ["Brazil"]}}
+
+Text: "28  |  Nachhaltige Textilien – Eine Frage der Verantwortung! Nationaler Aktionsplan Wirschaft und Menschenrechte Das Lieferkettensorgfaltspflichtengesetz in Deutschland Die Bundesregierung hat im Nationalen Aktionsplan Wirtschaft und Menschenrechte 2016 neben den Pflichten des Staates erstmals auch die Verantwortung von deutschen Unternehmen für die Achtung der Menschenrechte verankert und konkrete Erwartungen an die Umsetzung der Sorgfaltspflichten durch die Privatwirtschaft formuliert."
+Output: {{"sdgs": [8.7, 8.8, 12.6], "regions": ["Europe"], "countries": ["Germany"]}}
+
+Text: "Die Grundgesamtheit der zu befragenden Vorhaben entstammt einer internen Portfolioanalyse des SV Menschenrechte. Die Befragung erfolgte mittels der Befragungssoftware SurveyXact© zwischen Juli und August 2022 und hatte bei 251 kontaktierten Vorhaben einen Rücklauf von 90 beantwortenden Vorhaben, von denen 85 die Befragung vollständig abschlossen, und wies somit eine Beteiligung von 34% auf. Die Auswertung der Befragungsdaten erfolgte nach der Befragung unter Einsatz statistischer Software in Form von uni-, bi und multivariaten Analysen. Fokusgruppe mit Vorhaben der finanziellen Entwicklungszusammenarbeit"
+Output: {{"sdgs": [], "regions": [], "countries": []}}
+
+Text: "{text}"
+Output:"""
 
 # load json with chunks
 with open("data/processed/chunks.json", "r", encoding="utf-8") as f:
@@ -53,7 +47,7 @@ for chunk in chunk_sample:
     for model_name in models:
         response = ollama.chat(
             model=model_name,
-            messages=[{"role": "user", "content": CLASSIFY_PROMPT.format(text=chunk["text"])}],
+            messages=[{"role": "user", "content": CLASSIFY_PROMPT.format(text=chunk["text"], )}],
             format="json",
         )
         info = json.loads(response["message"]["content"])
