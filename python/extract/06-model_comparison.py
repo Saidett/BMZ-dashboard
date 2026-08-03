@@ -4,11 +4,31 @@ import ollama
 from pathlib import Path
 import pdfplumber
 import pandas as pd
+import pickle
+import csv
 
+# load files needed
+# chunks
+with open("data/processed/chunks.json", "r", encoding="utf-8") as f:
+    loaded_chunks = json.load(f)
+
+# SDG candidates per chunk
+with open("data/processed/top_targets_per_chunk.pkl", "rb") as f:
+    top10 = pickle.load(f)
+
+# csv with SDG targets and description
+with open("data/SDG-targets.csv", "r") as file:
+    reader = csv.reader(file)
+    next(reader)
+    SDGs = [{"sdg": row[1], "description": row[2]} for row in reader]
+
+# define the prompt
 CLASSIFY_PROMPT = """You are analyzing a subsection of a German development ministry publication.
 Classify the text into SDG targets, regions, and countries.
 
-Use ONLY the following candidate SDG targets. Do not assign targets outside this list: {targets}
+Use ONLY the following candidate SDG targets. Do not assign targets outside this list. 
+
+{targets}
 
 Rules:
 - Allowed regions: Africa, Asia, Latin America, Europe
@@ -32,23 +52,30 @@ Output: {{"sdgs": [], "regions": [], "countries": []}}
 Text: "{text}"
 Output:"""
 
-# load json with chunks
-with open("data/processed/chunks.json", "r", encoding="utf-8") as f:
-    loaded_chunks = json.load(f)
-
 classified_chunks = []
 
 models = ["llama3.2:3b", "mistral:7b", "llama3.1:8b", "qwen2.5:7b"]
 
-chunk_sample = random.sample(loaded_chunks, 10)
+# take a random sample to compare different models
+chunk_sample = random.sample(loaded_chunks, 20)
 
 results = []
+
 for chunk in chunk_sample:
+
+    SDG_candidates = top10[chunk["index"]]
+    SDG_targets = [SDGs[i] for i in SDG_candidates]
+    
+    targets_text = "\n".join(
+        f"{i+1} Targets: {target["sdg"]}: {target["description"]}"
+        for i, target in enumerate(SDG_targets)
+    )
+
     for model_name in models:
         response = ollama.chat(
-            model=model_name,
-            messages=[{"role": "user", "content": CLASSIFY_PROMPT.format(text=chunk["text"], )}],
-            format="json",
+            model = model_name,
+            messages = [{"role": "user", "content": CLASSIFY_PROMPT.format(text = chunk["text"], targets = targets_text)}],
+            format = "json",
         )
         info = json.loads(response["message"]["content"])
         results.append({
@@ -63,5 +90,5 @@ for chunk in chunk_sample:
 
 df = pd.DataFrame(results)
 # long format: each row = one model's answer per chunk
-print(df.to_string(index=False))
-df.to_csv("data/processed/model_comparison.csv", index=False)
+print(df.to_string(index = False))
+df.to_csv("data/processed/model_comparison.csv", index = False)

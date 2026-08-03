@@ -113,7 +113,8 @@ good_chunks = [c for c in good_chunks if c["char_count"] >= 499]
 len(good_chunks)
 
 # add chunk index now after !! filtering
-#good_chunks[chunk_index] = good_chunks[i]
+for i, chunk in enumerate(good_chunks):
+    chunk["index"] = i
 
 # now save chunks: document name, chunk index, chunk content, character count
 with open("data/processed/chunks.json", "w", encoding="utf-8") as f:

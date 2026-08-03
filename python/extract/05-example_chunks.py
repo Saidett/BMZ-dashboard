@@ -4,16 +4,16 @@ import json
 import pandas as pd
 
 # load json with chunks
-with open("data/processed/chunks.json", "r", encoding="utf-8") as f:
+with open("data/processed/chunks.json", "r", encoding = "utf-8") as f:
     loaded_chunks = json.load(f)
 
 # turn into document feature matrix for term frequency inverse document frequency
-vec = TfidfVectorizer(max_features=500)
+vec = TfidfVectorizer(max_features = 500)
 X = vec.fit_transform([c["text"] for c in loaded_chunks])
 
 # select k for number of clusters (examples)
 k = 17
-km = KMeans(n_clusters=k, random_state=0).fit(X)
+km = KMeans(n_clusters = k, random_state = 0).fit(X)
 
 centroids = km.cluster_centers_
 examples = []
@@ -26,11 +26,11 @@ for label in range(k):
     if not cluster_indices:
         continue 
 
-    best = min(cluster_indices, key=lambda i: (X[i] - centroids[label]).sum())
+    best = min(cluster_indices, key = lambda i: (X[i] - centroids[label]).sum())
     examples.append(loaded_chunks[best])
 
 examples
 
 # save chunks for manual classification
 df = pd.DataFrame(examples)
-df.to_csv("data/processed/example_chunks.csv", index=False, encoding="utf-8-sig")
+df.to_csv("data/processed/example_chunks.csv", index = False, encoding = "utf-8-sig")

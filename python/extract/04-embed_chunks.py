@@ -5,7 +5,7 @@ import pickle
 import numpy as np
 
 # load json with chunks
-with open("data/processed/chunks.json", "r", encoding="utf-8") as f:
+with open("data/processed/chunks.json", "r", encoding = "utf-8") as f:
     loaded_chunks = json.load(f)
 
 # load embedded SDG targets
@@ -14,13 +14,13 @@ with open("data/processed/SDGs_embedded.pkl", "rb") as f:
 
 EMBEDDING_MODEL = "nomic-embed-text"
 
-# append embedding to dict
+# append chunk embedding to dict
 for i, chunk in enumerate(loaded_chunks):
-  embedding = ollama.embed(model=EMBEDDING_MODEL, input=chunk["text"])['embeddings'][0]
+  embedding = ollama.embed(model = EMBEDDING_MODEL, input = chunk["text"])['embeddings'][0]
   loaded_chunks[i]["embedding"] = embedding
   print(f"Embedded chunk {i+1}/{len(loaded_chunks)}")
 
-# this turns the list of embeddings into a matrix (5205, 768 and 169, 768)
+# turn the list of embeddings into a matrix (5205, 768 and 169, 768)
 chunk_embedding_array = np.array([c["embedding"] for c in loaded_chunks])
 SDG_embedding_array = np.array([c["embedding"] for c in SDG_embedding])
 
@@ -32,7 +32,8 @@ SDG_norms = np.linalg.norm(SDG_embedding_array, axis = 1, keepdims=True)
 chunk_normed = chunk_embedding_array / chunk_norms
 SDG_normed = SDG_embedding_array / SDG_norms
 
-similarities = chunk_normed @ SDG_normed.T  # → (5205, 169)
+# calculate matrix
+similarities = chunk_normed @ SDG_normed.T 
 
 # now select the top 10 per chunk
 top10 = np.argsort(similarities, axis = 1)[:, -10:]
