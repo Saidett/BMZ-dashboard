@@ -7,7 +7,7 @@ import pandas as pd
 import pickle
 import csv
 
-# load files needed
+# load needed files
 # chunks
 with open("data/processed/chunks.json", "r", encoding="utf-8") as f:
     loaded_chunks = json.load(f)
@@ -54,7 +54,7 @@ Output:"""
 
 classified_chunks = []
 
-models = ["llama3.2:3b", "mistral:7b", "llama3.1:8b", "qwen2.5:7b"]
+models = ["llama3.2:3b", "teuken-7b-instruct-commercial-v0.4:7b", "qwen2.5:7b", "mistral:7b", "llama3.1:8b"]
 
 # take a random sample to compare different models
 chunk_sample = random.sample(loaded_chunks, 20)
