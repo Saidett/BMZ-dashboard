@@ -7,7 +7,6 @@ venv/
 *.RData
 .Rproj.user
 data/raw/*
-data/processed/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 .DS_Store
