@@ -14,7 +14,9 @@ dependencies = [
     "langchain-text-splitters",
     "PyMuPDF",
     "nltk",
-    "scikit-learn"
+    "scikit-learn",
+    "transformers",
+    "PyTorch"
 ]
 
 [tool.setuptools.packages.find]
