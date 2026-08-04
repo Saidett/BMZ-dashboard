@@ -1,6 +1,23 @@
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from transformers import pipeline
+import tensorflow as tf
 import json
+
+from transformers import TFBertModel
+from tensorflow.keras.models import load_model
+
+model = load_model("SDG-BERT-v1.1_mbert_multilabel_model_based_on_aurora_sdg_queries_v5.h5")
+
+import os
+import keras
+
+os.environ["KERAS_BACKEND"] = "jax"
+model = keras.saving.load_model("hf://MauriceV2021/AuroraSDGsModel")
+
+model.summary()
+
+
+
 
 # no need for tokenization because of HF pipeline function
 # load chunks
