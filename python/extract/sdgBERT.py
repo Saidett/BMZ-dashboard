@@ -1,42 +1,34 @@
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
-from transformers import pipeline
-import tensorflow as tf
+import requests
 import json
+from operator import itemgetter
+import time
 
-from transformers import TFBertModel
-from tensorflow.keras.models import load_model
+# Using API of the Aurora model because there is no better interface
+url = "https://aurora-sdg.labs.vu.nl/classifier/classify/aurora-sdg-multi"
 
-model = load_model("SDG-BERT-v1.1_mbert_multilabel_model_based_on_aurora_sdg_queries_v5.h5")
-
-import os
-import keras
-
-os.environ["KERAS_BACKEND"] = "jax"
-model = keras.saving.load_model("hf://MauriceV2021/AuroraSDGsModel")
-
-model.summary()
-
-
-
-
-# no need for tokenization because of HF pipeline function
 # load chunks
 with open("data/processed/chunks.json", "r", encoding="utf-8") as f:
     loaded_chunks = json.load(f)
 
-# import the classifier
-classifier = pipeline("text-classification", model = "MauriceV2021/AuroraSDGsModel")
+headers = {'Content-Type': 'application/json'}
 
-# truncation to ensure its less than BERT maximum of 512 tokens (altho shouldnt trigger) and batching to reduce calls
-results = classifier([chunk["text"] for chunk in loaded_chunks], truncation = True, batch_size = 16, top_k = 17)
+for i, chunk in enumerate(loaded_chunks):
+    
+    # send API request with chunk text
+    payload = json.dumps({"text": chunk["text"]})
+    response = requests.request("POST", url, headers = headers, data = payload)
+    response_json = json.loads(response.text)
 
-sorted(results[1], key=lambda d: d['score'], reverse = True)[:2]
-sum(item["score"] for item in results[1])
+    # format response into a simple dict, keeping only SDG goal and prediction certainty
+    goals = {p["sdg"]["code"]: p["prediction"] for p in response_json["predictions"]}
 
-{k: v for k, v in points.iteritems() if v[0] < 5 and v[1] < 5}
+    # keep only goals with at least 0.10 certainty and sort
+    top_goals = sorted({k:v for (k,v) in goals.items() if v > 0.10}.items(), key = lambda item: item[1], reverse = True)
 
+    # remove certainty value then append to chunks list
+    top_goals = [g for (g, p) in top_goals]
 
-for chunk in results:
+    loaded_chunks[i]["candidates"] = top_goals
 
-
-
+    # limitting API calls to 5 per second
+    time.sleep(0.2)
