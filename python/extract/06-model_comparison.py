@@ -24,12 +24,13 @@ with open("data/SDG-targets.csv", "r") as file:
 
 # define the prompt
 CLASSIFY_PROMPT = """You are analyzing a subsection of a German development ministry publication.
-Classify the text into SDG targets. Use ONLY the candidate SDG targets. Do not assign targets outside this list. 
+Classify the text into SDG targets.
 
 Rules:
+- Use only targets from the candidate list.
+- Assign an SDG if the text clearly matches the meaning of the target description, even if the SDG is not explicitly mentioned.
 - Return SDG targets as numbers only.
 - Return [] if nothing matches.
-- Assign an SDG if the text clearly matches the meaning of the target description, even if the SDG is not explicitly mentioned.
 - Provide a one-sentence reason for your choice.
 
 Examples:
@@ -45,7 +46,7 @@ Output: {{"sdgs": [], "reason": "The text only describes survey methodology and 
 
 Text: "{text}"
 
-Candidates:
+Use ONLY targets from this list. Do not assign any target outside this list.
 {targets}
 
 Output:"""
