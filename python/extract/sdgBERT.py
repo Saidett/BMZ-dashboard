@@ -32,3 +32,7 @@ for i, chunk in enumerate(loaded_chunks):
 
     # limitting API calls to 5 per second
     time.sleep(0.2)
+
+# save classified chunks back
+with open("data/processed/chunks_classified.json", "w", encoding="utf-8") as f:
+     json.dump(loaded_chunks, f, ensure_ascii = False, indent = 2)

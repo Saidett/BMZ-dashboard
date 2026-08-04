@@ -1,4 +1,4 @@
-# Dashboard to summarise and visualise BMZ projects and data
+# Dashboard to summarise and visualise BMZ projects and data OUTDATED README
 
 An interactive dashboard exploring Germany's development cooperation strategy and projects, combining BMZ policy documents with IATI data.
 
@@ -12,7 +12,7 @@ This project scrapes, parses, and classifies BMZ publications to make German dev
 
 ## Architecture
 
-BMZ PDFs (data/raw/) → Parse & chunk (python/extract/parse.py) → Classify by SDG (python/extract/classify.py) → Merge & aggregate (python/extract/merge.py) → JSON/CSV outputs (data/processed/)
+BMZ PDFs (data/raw/) → Parse & chunk (python/extract/parse.py) → Classify by SDG using Aurora SDG multilabel model → Classify by country and region (upcoming) → Merge & aggregate (python/extract/merge.py) → JSON/CSV outputs (data/processed/)
 
 IATI data → Country-level project data, funding, sectors
 
@@ -32,9 +32,9 @@ R Shiny Dashboard (R/) → Reads pre-processed JSON → Interactive filtering by
 
 ## Tech Stack
 
-- **Python**: PDF parsing (PyMuPDF), chunking (LangChain), LLM classification (Ollama)
+- **Python**: PDF parsing (PyMuPDF)
 - **R**: Shiny dashboard
-- **Models** (via Ollama): llama3.2:3b (classification), nomic-embed-text (embeddings)
+- **Models** (via Ollama): llama3.2:3b (classification), nomic-embed-text (embeddings) OUTDATED
 
 ## Project Structure
 ```
