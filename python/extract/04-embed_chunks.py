@@ -12,7 +12,7 @@ with open("data/processed/chunks.json", "r", encoding = "utf-8") as f:
 with open("data/processed/SDGs_embedded.pkl", "rb") as f:
     SDG_embedding = pickle.load(f)
 
-EMBEDDING_MODEL = "nomic-embed-text"
+EMBEDDING_MODEL = "jina/jina-embeddings-v2-base-de"
 
 # append chunk embedding to dict
 for i, chunk in enumerate(loaded_chunks):

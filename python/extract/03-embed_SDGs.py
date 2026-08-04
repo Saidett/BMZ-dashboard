@@ -7,7 +7,7 @@ with open("data/SDG-targets.csv", "r") as file:
     next(reader)
     SDGs = [{"sdg": row[1], "description": row[2]} for row in reader]
 
-EMBEDDING_MODEL = "nomic-embed-text"
+EMBEDDING_MODEL = "jina/jina-embeddings-v2-base-de"
 
 SDG_embedding = []
 
