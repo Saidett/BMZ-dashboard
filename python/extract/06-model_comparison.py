@@ -24,33 +24,30 @@ with open("data/SDG-targets.csv", "r") as file:
 
 # define the prompt
 CLASSIFY_PROMPT = """You are analyzing a subsection of a German development ministry publication.
-Classify the text into SDG targets, regions, and countries.
-
-Use ONLY the following candidate SDG targets. Do not assign targets outside this list. 
-
-{targets}
+Classify the text into SDG targets. Use ONLY the candidate SDG targets. Do not assign targets outside this list. 
 
 Rules:
-- Allowed regions: Africa, Asia, Latin America, Europe
-- Use standard English country names (e.g., Kenya, India, Germany).
-- Do not include regions or continents as countries.
 - Return SDG targets as numbers only.
-- Include an SDG if the text clearly relates to it, even if the SDG number or name is not mentioned.
-- Use [] if no SDG target, region or country apply.
+- Return [] if nothing matches.
+- Assign an SDG if the text clearly matches the meaning of the target description, even if the SDG is not explicitly mentioned.
 - Provide a one-sentence reason for your choice.
 
 Examples:
 
 Text: "Länderkapitel  |  75 Menschenrechtsaktivistinnen und -aktivisten, die in Landkonflikten Position beziehen oder die Verletzung von Indigenenrechten anprangern, Aus Kreisen evangelikaler Fundamentalisten werden immer wieder Übergriffe auf religiöse und sexuelle Minderheiten bekannt. LGBTIQ+ Personen werden auch aus religiöser Motivation beleidigt und angegriffen. Der zunehmende Einfluss evangelikaler Fundamentalisten erschwert es Anhängerinnen und Anhängern afrobrasilianischer Religionen, ihren Glauben öffentlich auszuüben."
-Output: {{"sdgs": [10.2, 10.3, 16.1, 16.10], "regions": ["Latin America"], "countries": ["Brazil"], "reason": [It's about economic and social inclusion but also peace and institutions]}}
+Output: {{"sdgs": [10.2, 10.3, 16.1, 16.10], "reason": "The text describes discrimination and violence against religious and sexual minorities, restrictions on freedom of religion, and threats to human rights defenders, aligning with targets on social inclusion, equal opportunity, reducing violence, and protecting fundamental freedoms."}}
 
 Text: "28  |  Nachhaltige Textilien – Eine Frage der Verantwortung! Nationaler Aktionsplan Wirschaft und Menschenrechte Das Lieferkettensorgfaltspflichtengesetz in Deutschland Die Bundesregierung hat im Nationalen Aktionsplan Wirtschaft und Menschenrechte 2016 neben den Pflichten des Staates erstmals auch die Verantwortung von deutschen Unternehmen für die Achtung der Menschenrechte verankert und konkrete Erwartungen an die Umsetzung der Sorgfaltspflichten durch die Privatwirtschaft formuliert."
-Output: {{"sdgs": [8.7, 8.8, 12.6], "regions": ["Europe"], "countries": ["Germany"], "reason": [Focuses on economic growth, specifically on labour with a focus on transnational companies]}}
+Output: {{"sdgs": [8.7, 8.8, 12.6], "reason": "The text discusses corporate human rights due diligence and responsible business conduct through supply chain legislation, aligning with targets on labour rights, safe working conditions, and encouraging companies to adopt sustainable and socially responsible practices."}}
 
 Text: "Die Grundgesamtheit der zu befragenden Vorhaben entstammt einer internen Portfolioanalyse des SV Menschenrechte. Die Befragung erfolgte mittels der Befragungssoftware SurveyXact© zwischen Juli und August 2022 und hatte bei 251 kontaktierten Vorhaben einen Rücklauf von 90 beantwortenden Vorhaben, von denen 85 die Befragung vollständig abschlossen, und wies somit eine Beteiligung von 34% auf. Die Auswertung der Befragungsdaten erfolgte nach der Befragung unter Einsatz statistischer Software in Form von uni-, bi und multivariaten Analysen. Fokusgruppe mit Vorhaben der finanziellen Entwicklungszusammenarbeit"
-Output: {{"sdgs": [], "regions": [], "countries": [], "reason": [No SDG mentioned]}}
+Output: {{"sdgs": [], "reason": "The text only describes survey methodology and contains no substantive development content matching any candidate target"}}
 
 Text: "{text}"
+
+Candidates:
+{targets}
+
 Output:"""
 
 classified_chunks = []
@@ -68,8 +65,8 @@ for chunk in chunk_sample:
     SDG_targets = [SDGs[i] for i in SDG_candidates]
     
     targets_text = "\n".join(
-        f"{i+1} Targets: {target["sdg"]}: {target["description"]}"
-        for i, target in enumerate(SDG_targets)
+        f"{target["sdg"]}: {target["description"]}"
+        for target in SDG_targets
     )
 
     for model_name in models:
