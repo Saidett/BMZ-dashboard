@@ -28,10 +28,11 @@ Classify the text into SDG targets.
 
 Rules:
 - Use only targets from the candidate list.
-- Assign an SDG if the text clearly matches the meaning of the target description, even if the SDG is not explicitly mentioned.
+- Assign an SDG if the text clearly matches the target description.
 - Return SDG targets as numbers only.
 - Return [] if nothing matches.
 - Provide a one-sentence reason for your choice.
+- Return ONLY valid JSON.
 
 Examples:
 
@@ -49,7 +50,8 @@ Text: "{text}"
 Use ONLY targets from this list. Do not assign any target outside this list.
 {targets}
 
-Output:"""
+Output (in JSON):
+"""
 
 classified_chunks = []
 
@@ -76,15 +78,24 @@ for chunk in chunk_sample:
             messages = [{"role": "user", "content": CLASSIFY_PROMPT.format(text = chunk["text"], targets = targets_text)}],
             format = "json",
         )
+
+        content = response["message"]["content"]
+
+        try:
+            info = json.loads(content)
+        except json.JSONDecodeError as e:
+            print("Invalid JSON:")
+            print(content)
+            print(e)
+            continue
+
         info = json.loads(response["message"]["content"])
         results.append({
             "pdf": chunk["pdf"],
             "text": chunk["text"],
             "model": model_name,
-            "regions": info.get("regions", []),
             "sdgs": info.get("sdgs", []),
-            "countries": info.get("countries", []),
-            "reasoning": info.get("reasoning", ""),
+            "reasoning": info.get("reason"),
         })
 
 df = pd.DataFrame(results)
