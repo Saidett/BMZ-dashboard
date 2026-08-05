@@ -5,19 +5,21 @@ import os
 from python.config import DATA_RAW
 
 # publications base url
-base_url = "https://www.bmz.de/ajax/filterlist/de/24710-24710"
+base_url = "https://www.transparenzportal.bund.de/api/v1/publications?"
 
-# get the url from requests get method
-read = requests.get(base_url)
+# get the json with publications
+read = requests.get(base_url).json()
 
-# full html content 
-html_content = read.content
+# how many hits?
+read["meta"]["count"]
 
-# parse the html content 
-soup = BeautifulSoup(html_content, "html.parser")
+# keep only documents with strategy
+document_categories = ["B11", "B02", "B04", "B12", "B01", "B18"]
 
-# find number of publications in total
-nr_publications = int(soup.select_one("div[data-hits]")["data-hits"])
+# keep only German-language publications
+german_pubs = [p for p in read["data"] if p["language"] == "de" and p["category"] in document_categories]
+
+urls = [dict["url"] for dict in german_pubs]
 
 # define list to save results
 publications_list = []
