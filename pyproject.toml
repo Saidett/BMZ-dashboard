@@ -16,7 +16,10 @@ dependencies = [
     "nltk",
     "scikit-learn",
     "transformers",
-    "PyTorch"
+    "PyTorch",
+    "dehyphen",
+    "spacy",
+    "unicodedata"
 ]
 
 [tool.setuptools.packages.find]

@@ -1,34 +1,67 @@
 import pdfplumber
 from pathlib import Path
 from python.config import DATA_RAW
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 import fitz
 import re
 import html
 import json
+import unicodedata
+from unicodedata import category
+import spacy
+from spacy.lang.de.examples import sentences
+
 import nltk
+#nltk.download('punkt_tab')
 from nltk.corpus import stopwords
+from nltk.tokenize import sent_tokenize
+import ollama
+import numpy as np
+
+import torch
+
+_orig_load = torch.load
+
+def _torch_load(*args, **kwargs):
+    kwargs.setdefault("weights_only", False)   # legacy flair LM checkpoints (proto 4)
+    return _orig_load(*args, **kwargs)
+
+torch.load = _torch_load
+
+from dehyphen import FlairScorer
+from dehyphen.format import text_to_format, format_to_text
+
+scorer = FlairScorer(lang = "de")
+cleaned = scorer.dehyphen(all_chunks[1]["text"])
 
 pdf_dir = DATA_RAW
 all_chunks = []
 
-# using langchain recursive splitting to respect PDF structure
-splitter = RecursiveCharacterTextSplitter(
-    chunk_size=1500,   
-    chunk_overlap=200
-)
+
+
+# look up for unicode characters
+_ZS = {i: " " for i in range(0x110000) if category(chr(i)) == "Zs"}
 
 # pre-cleaning helper function
 def clean_text(text):
-    text = html.unescape(text)  # remove html chars            
+    text = unicodedata.normalize("NFKC", text)
+    text = html.unescape(text)  # remove html chars     
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
+    text = text.translate(_ZS)         
     text = re.sub(r"[ \t]+", " ", text)     # remove double spaces
     text = re.sub(r"\n{3,}", "\n\n", text)  # remove excessive line breaks
-    text = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", "", text)  # remove special chars
-    text = text.replace("\xad", "")           # remove soft hyphens
-    text = re.sub(r"-\n", "", text)           # join hyphenated line breaks
-    text = re.sub(r"(?<=\w)\n(?=\w)", "", text)  # merge line break if next to them its not whitespace (to merge hyphenated words)
-    text = re.sub(r"(?<!\n)\n(?!\n)", " ", text)  # single \n to space, keep \n\n
-    return text.strip(" \t")
+    text = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", " ", text)  # remove special chars
+    text = text.replace("\xad\n", "-\n").replace("\xad", "")   # remove soft hyphens
+    text = re.sub(r"(?<=\w)\n(?=[a-zäöüß])", "", text)
+    return text
+
+scorer = FlairScorer(lang = "de")
+
+def dehyphenate(text):
+    if "\n" not in text:
+        text += "\n"
+    lines = [ln for ln in text.split("\n") if not (ln and not ln.strip())]
+    text = format_to_text(scorer.dehyphen(text_to_format("\n".join(lines))))
+    return re.sub(r"\n{3,}", "\n\n", text).strip()
 
 # post cleaning helper function
 def final_clean(chunk):
@@ -36,18 +69,35 @@ def final_clean(chunk):
     chunk = re.sub(r" +", " ", chunk)
     return chunk
 
+# load spacy and define model for semantic chunking
+nlp = spacy.load("de_core_news_sm")
+MODEL = "jina/jina-embeddings-v2-base-de"
+
+# define chunking function
+def semantic_chunking(text):
+    sents = sent_tokenize(text, language = "german")
+    vecs  = np.array(ollama.embed(model = MODEL, input = sents)["embeddings"])
+    sim   = np.einsum("ij,ij->i", vecs[:-1] / np.linalg.norm(vecs[:-1], axis=1, keepdims=True),
+                                vecs[1:]  / np.linalg.norm(vecs[1:],  axis=1, keepdims=True))
+    cuts  = np.where(sim < np.percentile(sim, 55))[0] + 1
+    chunks = np.split(sents, cuts)
+    return(chunks)
+
+
 # loop through PDFs to turn into chunks and save them in all_chunks list
-for pdf_path in sorted(pdf_dir.glob("*.pdf")):
+for pdf_path in sorted(pdf_dir.glob("*.pdf"))[:1]:
     
     # using fitz to read columns properly
     doc = fitz.open(pdf_path)
     text = ""
         
     for page in doc:
+        
         # gets blocks per page with coordinates
         blocks = page.get_text("blocks")
+        
         # sorting blocks to sort text
-        blocks.sort(key=lambda b: (b[1], b[0]))
+        blocks.sort(key = lambda b: (b[1], b[0]))
         for b in blocks:
             if b[6] == 0:  # to keep only text blocks
                 text += b[4] + "\n"
@@ -55,15 +105,21 @@ for pdf_path in sorted(pdf_dir.glob("*.pdf")):
     # clean text before chunking
     text = clean_text(text)
 
+    # semantic chunking with spacy
+    doc = nlp(text)
+    sentences = list(doc.sents)
+
+    all_chunks.append({"text": text})
+
     # now do the recursive chunking with langchain
-    chunks = splitter.split_text(text)
+    # chunks = splitter.split_text(text)
     
-    for i, chunk in enumerate(chunks):
-        all_chunks.append({
-            "pdf": pdf_path.name,
-            "text": final_clean(chunk),
-            "char_count": len(chunk),
-        })
+#    for i, chunk in enumerate(chunks):
+ #       all_chunks.append({
+  #          "pdf": pdf_path.name,
+   #         "text": final_clean(chunk),
+    #        "char_count": len(chunk),
+     #   })
 
 len(all_chunks)
 
