@@ -7,37 +7,11 @@ import html
 import json
 import unicodedata
 from unicodedata import category
-import spacy
-from spacy.lang.de.examples import sentences
-
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 import nltk
-#nltk.download('punkt_tab')
 from nltk.corpus import stopwords
-from nltk.tokenize import sent_tokenize
-import ollama
-import numpy as np
 
-import torch
-
-_orig_load = torch.load
-
-def _torch_load(*args, **kwargs):
-    kwargs.setdefault("weights_only", False)   # legacy flair LM checkpoints (proto 4)
-    return _orig_load(*args, **kwargs)
-
-torch.load = _torch_load
-
-from dehyphen import FlairScorer
-from dehyphen.format import text_to_format, format_to_text
-
-scorer = FlairScorer(lang = "de")
-cleaned = scorer.dehyphen(all_chunks[1]["text"])
-
-pdf_dir = DATA_RAW
-all_chunks = []
-
-
-
+# define helper functions
 # look up for unicode characters
 _ZS = {i: " " for i in range(0x110000) if category(chr(i)) == "Zs"}
 
@@ -48,19 +22,16 @@ def clean_text(text):
     text = text.replace("\r\n", "\n").replace("\r", "\n")
     text = text.translate(_ZS)         
     text = re.sub(r"[ \t]+", " ", text)     # remove double spaces
+    text = re.sub(r"[ \t]+$", "", text, flags = re.M) # remove whitespace after lines 
     text = re.sub(r"\n{3,}", "\n\n", text)  # remove excessive line breaks
     text = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", " ", text)  # remove special chars
     text = text.replace("\xad\n", "-\n").replace("\xad", "")   # remove soft hyphens
-    text = re.sub(r"(?<=\w)\n(?=[a-zäöüß])", "", text)
+    text = re.sub(r"(?<=\w)\n(?=[a-zäöüß])", "", text) # if there is no space before a line break and immediately a letter (broken hyphenation) then just remove it
     return text
 
-scorer = FlairScorer(lang = "de")
-
 def dehyphenate(text):
-    if "\n" not in text:
-        text += "\n"
-    lines = [ln for ln in text.split("\n") if not (ln and not ln.strip())]
-    text = format_to_text(scorer.dehyphen(text_to_format("\n".join(lines))))
+    text = re.sub(r"-\n(?=[a-zäöüß])", "", text)              # word split
+    text = re.sub(r"-\n(?=[A-ZÄÖÜ0-9])", "-", text)           # compound (EU-Staaten)
     return re.sub(r"\n{3,}", "\n\n", text).strip()
 
 # post cleaning helper function
@@ -69,23 +40,29 @@ def final_clean(chunk):
     chunk = re.sub(r" +", " ", chunk)
     return chunk
 
-# load spacy and define model for semantic chunking
-nlp = spacy.load("de_core_news_sm")
-MODEL = "jina/jina-embeddings-v2-base-de"
+# define splitter function
+splitter = RecursiveCharacterTextSplitter(
+    chunk_size = 1500,
+    chunk_overlap = 200,
+    length_function = len,
+    add_start_index = True,
+    separators = ["\n\n", "\n", ". ", " ", ""]
+)
 
-# define chunking function
-def semantic_chunking(text):
-    sents = sent_tokenize(text, language = "german")
-    vecs  = np.array(ollama.embed(model = MODEL, input = sents)["embeddings"])
-    sim   = np.einsum("ij,ij->i", vecs[:-1] / np.linalg.norm(vecs[:-1], axis=1, keepdims=True),
-                                vecs[1:]  / np.linalg.norm(vecs[1:],  axis=1, keepdims=True))
-    cuts  = np.where(sim < np.percentile(sim, 55))[0] + 1
-    chunks = np.split(sents, cuts)
-    return(chunks)
+def enforce_min(chunks, min_chars=500):
+    out = []
+    for c in chunks:
+        if out and len(c) < min_chars:
+            out[-1] = out[-1] + " " + c     # merge tiny into previous
+        else:
+            out.append(c)
+    return out
 
+pdf_dir = DATA_RAW
+all_chunks = []
 
 # loop through PDFs to turn into chunks and save them in all_chunks list
-for pdf_path in sorted(pdf_dir.glob("*.pdf"))[:1]:
+for pdf_path in sorted(pdf_dir.glob("*.pdf")):
     
     # using fitz to read columns properly
     doc = fitz.open(pdf_path)
@@ -104,22 +81,26 @@ for pdf_path in sorted(pdf_dir.glob("*.pdf"))[:1]:
     
     # clean text before chunking
     text = clean_text(text)
-
-    # semantic chunking with spacy
-    doc = nlp(text)
-    sentences = list(doc.sents)
-
-    all_chunks.append({"text": text})
+    text = dehyphenate(text)
 
     # now do the recursive chunking with langchain
-    # chunks = splitter.split_text(text)
+    chunk_list = splitter.split_text(text)
     
-#    for i, chunk in enumerate(chunks):
- #       all_chunks.append({
-  #          "pdf": pdf_path.name,
-   #         "text": final_clean(chunk),
-    #        "char_count": len(chunk),
-     #   })
+    large_chunks = []
+
+    # ensure minimum character size of chunk, if not, merge with previous
+    for c in chunk_list:
+        if large_chunks and len(c) < 500:
+            large_chunks[-1] = large_chunks[-1] + " " + c     # merge tiny into previous
+        else:
+            large_chunks.append(c)
+
+    for chunk in large_chunks:
+        all_chunks.append({
+            "pdf": pdf_path.name,
+            "text": final_clean(chunk),
+            "char_count": len(chunk),
+        })
 
 len(all_chunks)
 
@@ -143,7 +124,7 @@ def is_meaningful(text):
     # reject text without enough stop words
     words_lower = [w.lower() for w in words]
     stop_count = sum(1 for w in words_lower if w in all_stops)
-    if stop_count / len(words) < 0.30:
+    if stop_count / len(words) < 0.15:
         return False
 
     # reject flat lists: many parenthetical acronyms but no sentence structure
@@ -160,12 +141,7 @@ for chunk in all_chunks:
     if is_meaningful(chunk["text"]):
         good_chunks.append(chunk)
 
-len(good_chunks)
-
-# filter out chunks that are too small to be meaningful (less than 500 characters, intuitive judgement after inspection)
-good_chunks = [c for c in good_chunks if c["char_count"] >= 499]
-
-# final length: 5205 chunks
+# length: 33241
 len(good_chunks)
 
 # add chunk index now after !! filtering
@@ -173,5 +149,5 @@ for i, chunk in enumerate(good_chunks):
     chunk["index"] = i
 
 # now save chunks: document name, chunk index, chunk content, character count
-with open("data/processed/chunks.json", "w", encoding="utf-8") as f:
-     json.dump(good_chunks, f, ensure_ascii=False, indent=2)
+with open("data/processed/chunks.json", "w", encoding = "utf-8") as f:
+     json.dump(good_chunks, f, ensure_ascii = False, indent = 2)
